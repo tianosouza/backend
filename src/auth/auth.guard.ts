@@ -6,10 +6,15 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
+import { Roles } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private prismaService: PrismaService, // Assuming PrismaService is imported and available
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: Request = context.switchToHttp().getRequest();
@@ -28,10 +33,18 @@ export class AuthGuard implements CanActivate {
       const payload = this.jwtService.verifyAsync<{
         name: string;
         email: string;
+        role: Roles;
+        sub: string;
       }>(token, {
         algorithms: ['HS256'],
       });
-
+      const user = await this.prismaService.user.findUnique({
+        where: { id: (await payload).sub },
+      });
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      request.user = user;
       return true;
     } catch (error) {
       console.error('Token verification failed:', error);
