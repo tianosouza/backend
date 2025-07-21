@@ -17,16 +17,30 @@ enum Roles {
   ADMIN // Acesso total do sistema (Administrator)
   SYNDIC // Acesso controle de dados do condomínio (Syndic)
   RESIDENT // Cadastro de liberaçao de visitantes (Resident)
-  RECEPTION // Registro de entrada e saída de visitantes, entregas (Reception)
+  RECEPTION // Registro de entrada e saída de visitantes, entregas (Reception) == Ira se tornar um model
   USER // Acesso limitado do sistema (User)
 }
 
 model User {
+  id             String        @id @default(cuid())
+  name           String
+  email          String        @unique
+  password       String
+  role           Roles         @default(USER)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  condominium    Condominium?  @relation("CondominiumResidents", fields: [condominiumId], references: [id])
+  condominiumId  String?
+  syndicOf       Condominium?  @relation("CondominiumSyndic")
+}
+
+model Condominium {
   id        String   @id @default(cuid())
   name      String
-  email     String   @unique
-  password  String
-  role      String   @default("USER")
+  address   String // Futuramente pode ser um model separado
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  residents User[]   @relation("CondominiumResidents")
+  syndic    User?    @relation("CondominiumSyndic", fields: [syndicId], references: [id])
+  syndicId  String?  @unique
 }

@@ -13,7 +13,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class AuthGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
-    private prismaService: PrismaService, // Assuming PrismaService is imported and available
+    private prismaService: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -25,6 +25,7 @@ export class AuthGuard implements CanActivate {
     }
 
     const token = authHeader.split(' ')[1];
+
     if (!token) {
       throw new UnauthorizedException('No token provided');
     }
@@ -38,13 +39,17 @@ export class AuthGuard implements CanActivate {
       }>(token, {
         algorithms: ['HS256'],
       });
+
       const user = await this.prismaService.user.findUnique({
         where: { id: (await payload).sub },
       });
+
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
+
       request.user = user;
+
       return true;
     } catch (error) {
       console.error('Token verification failed:', error);
